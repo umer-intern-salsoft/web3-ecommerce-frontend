@@ -3,11 +3,13 @@ import { create } from 'zustand';
 export const useStore = create((set, get) => ({
   // --- Auth State ---
   user: null, // { id, email, isAdmin }
+  authLoading: true, // Tracks initial session load
   setUser: (userData) => set({ user: userData }),
+  setAuthLoading: (loading) => set({ authLoading: loading }),
   logoutUser: () => set({ user: null }),
 
   // --- Cart State ---
-  cart: [], // Array of { product, quantity }
+  cart: [],
   
   addToCart: (product) => set((state) => {
     const existingItem = state.cart.find(item => item.product.id === product.id);
@@ -29,7 +31,6 @@ export const useStore = create((set, get) => ({
 
   clearCart: () => set({ cart: [] }),
 
-  // Helper to calculate total ETH cost of the cart dynamically
   getCartTotal: () => {
     const { cart } = get();
     return cart.reduce((total, item) => total + (item.product.priceEth * item.quantity), 0);
