@@ -12,7 +12,7 @@ const projectId = import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || 'b56e64d476b8
 const metadata = {
   name: 'Web3 Storefront',
   description: 'Web3 E-Commerce Storefront on Sepolia',
-  url: 'http://localhost:5173',
+  url: window.location.origin,
   icons: ['https://assets.reown.com/reown-profile-pic.png']
 };
 
@@ -27,6 +27,10 @@ createAppKit({
   networks: [sepolia],
   projectId,
   metadata,
+  allWallets: 'SHOW',
+  featuredWalletIds: [
+    '1ae92b26df02f0abca6304df07debccd18262fdf5fe82daa81593582dac9a369'
+  ],
   features: {
     analytics: false
   }

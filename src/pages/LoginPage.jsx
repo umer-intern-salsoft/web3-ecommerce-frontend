@@ -44,43 +44,47 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-16 p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6">{isLogin ? 'Login' : 'Register'}</h2>
+    <div className="mx-auto max-w-md px-4 py-16 sm:py-24">
+      <div className="surface-card p-6 sm:p-8">
+      <span className="eyebrow">Welcome</span>
+      <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-900">{isLogin ? 'Log in to your account' : 'Create your account'}</h2>
+      <p className="mb-7 mt-2 text-sm text-slate-500">Access the store and manage your crypto checkout.</p>
       
-      {error && <div className="mb-4 text-red-500 text-sm">{error}</div>}
+      {error && <div className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>}
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
+          <label className="mb-1.5 block text-sm font-bold text-slate-700">Email</label>
           <input 
             type="email" 
             required
-            className="w-full p-2 border rounded"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100"
             value={email} 
             onChange={(e) => setEmail(e.target.value)} 
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
+          <label className="mb-1.5 block text-sm font-bold text-slate-700">Password</label>
           <input 
             type="password" 
             required
-            className="w-full p-2 border rounded"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 outline-none transition focus:border-violet-400 focus:bg-white focus:ring-4 focus:ring-violet-100"
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
           />
         </div>
-        <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
+        <button type="submit" className="primary-button w-full">
           {isLogin ? 'Log In' : 'Sign Up'}
         </button>
       </form>
       
       <button 
         onClick={() => setIsLogin(!isLogin)} 
-        className="mt-4 text-sm text-blue-600 hover:underline w-full text-center"
+        className="mt-5 w-full text-center text-sm font-bold text-violet-600 hover:text-violet-800"
       >
         {isLogin ? "Don't have an account? Register" : "Already have an account? Log in"}
       </button>
+      </div>
     </div>
   );
 }

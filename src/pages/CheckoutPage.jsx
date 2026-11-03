@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
+import { AppKitButton } from '@reown/appkit/react';
 import { parseEther } from 'viem';
 import { useStore } from '../store/useStore';
 import { fetchApi } from '../api';
@@ -98,61 +99,73 @@ export default function CheckoutPage() {
 
   if (cart.length === 0 && !successMessage) {
     return (
-      <div className="p-8 text-center">
-        <p className="text-gray-500 mb-4">Your cart is empty.</p>
-        <button onClick={() => navigate('/')} className="bg-blue-600 text-white px-4 py-2 rounded">
+      <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+        <div className="surface-card p-10">
+        <p className="mb-5 text-slate-500">Your cart is empty.</p>
+        <button onClick={() => navigate('/')} className="primary-button">
           Return to Shop
         </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">Web3 Checkout</h1>
+    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+      <div className="mb-8">
+        <span className="eyebrow">Secure checkout</span>
+        <h1 className="page-title mt-2">Complete your order</h1>
+        <p className="mt-2 text-slate-500">Pay directly from your wallet on the Sepolia network.</p>
+      </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md mb-6 space-y-4">
-        <h2 className="text-xl font-bold border-b pb-2">Order Summary</h2>
+      <div className="surface-card mb-5 space-y-4 p-5 sm:p-6">
+        <h2 className="border-b border-slate-100 pb-4 text-lg font-bold text-slate-900">Order summary</h2>
         {cart.map(item => (
-          <div key={item.product.id} className="flex justify-between text-sm">
-            <span>{item.product.name} (x{item.quantity})</span>
-            <span className="font-semibold">{(item.product.priceEth * item.quantity).toFixed(4)} ETH</span>
+          <div key={item.product.id} className="flex justify-between gap-4 text-sm text-slate-600">
+            <span>{item.product.name} <span className="text-slate-400">× {item.quantity}</span></span>
+            <span className="font-semibold text-slate-900">{(item.product.priceEth * item.quantity).toFixed(4)} ETH</span>
           </div>
         ))}
-        <div className="border-t pt-4 flex justify-between font-bold text-lg">
+        <div className="flex justify-between border-t border-slate-100 pt-4 text-lg font-bold">
           <span>Total:</span>
-          <span className="text-indigo-600">{totalEth.toFixed(4)} ETH</span>
+          <span className="text-violet-600">{totalEth.toFixed(4)} ETH</span>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md space-y-6">
-        <h2 className="text-xl font-bold">Wallet Payment (Sepolia Network)</h2>
+      <div className="surface-card space-y-6 p-5 sm:p-6">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Wallet payment</h2>
+          <p className="mt-1 text-sm text-slate-500">Sepolia test network</p>
+        </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Wallet Status:</span>
-          <appkit-button />
+        <div className="flex min-h-16 flex-col items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Connect a wallet</p>
+            <p className="text-xs text-slate-500">Rainbow and other WalletConnect wallets supported</p>
+          </div>
+          <AppKitButton />
         </div>
 
         {isConnected && (
-          <div className="text-xs bg-gray-100 p-2 rounded break-all text-gray-600">
+          <div className="break-all rounded-xl bg-emerald-50 p-3 text-xs text-emerald-700">
             Connected: {address}
           </div>
         )}
 
         {errorMessage && (
-          <div className="p-3 bg-red-100 text-red-700 rounded text-sm">
+          <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
             {errorMessage}
           </div>
         )}
 
         {successMessage && (
-          <div className="p-3 bg-green-100 text-green-700 rounded text-sm font-semibold">
+          <div className="rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">
             {successMessage}
           </div>
         )}
 
         {statusText && !errorMessage && !successMessage && (
-          <div className="p-3 bg-blue-50 text-blue-700 rounded text-sm animate-pulse">
+          <div className="animate-pulse rounded-xl bg-violet-50 p-3 text-sm text-violet-700">
             {statusText}
           </div>
         )}
@@ -160,10 +173,10 @@ export default function CheckoutPage() {
         <button
           disabled={!isConnected || isSendingTx || isWaitingForTx || isVerifying || !!successMessage}
           onClick={handlePayment}
-          className={`w-full py-3 rounded-lg text-white font-bold transition ${
+          className={`w-full rounded-xl py-3.5 font-bold text-white transition ${
             !isConnected || isSendingTx || isWaitingForTx || isVerifying || !!successMessage
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-indigo-600 hover:bg-indigo-700 shadow-md'
+              ? 'cursor-not-allowed bg-slate-300'
+              : 'bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-violet-200 hover:-translate-y-0.5 hover:shadow-xl'
           }`}
         >
           {isSendingTx && 'Awaiting Wallet Approval...'}

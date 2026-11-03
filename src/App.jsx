@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
 import { fetchApi } from './api';
 import LoginPage from './pages/LoginPage';
@@ -12,6 +12,8 @@ import CheckoutPage from './pages/CheckoutPage';
 const Navbar = () => {
   const { user, logoutUser, cart } = useStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLoginPage = location.pathname === '/login';
 
   const handleLogout = async () => {
     try {
@@ -26,34 +28,46 @@ const Navbar = () => {
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <nav className="p-4 bg-gray-800 text-white flex justify-between items-center shadow-md">
-      <Link to="/" className="font-bold text-xl hover:text-gray-300">
-        Web3 Shop
-      </Link>
-      
-      <div className="flex items-center gap-6">
-        <Link to="/" className="hover:text-gray-300">Store</Link>
-        <Link to="/cart" className="hover:text-gray-300">
-          Cart ({totalCartItems})
+    <nav className="sticky top-0 z-40 border-b border-white/70 bg-white/80 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <Link to="/" className="flex items-center gap-2 font-extrabold tracking-tight text-slate-900">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-200">◆</span>
+          <span className="hidden sm:inline">Nexa Store</span>
         </Link>
-        
-        {user?.isAdmin && (
-          <Link to="/admin" className="bg-yellow-600 px-3 py-1 rounded text-sm font-semibold hover:bg-yellow-500">
-            Admin Panel
-          </Link>
-        )}
 
-        {user ? (
-          <button 
-            onClick={handleLogout} 
-            className="bg-red-600 px-3 py-1 rounded text-sm hover:bg-red-500"
-          >
-            Logout
-          </button>
-        ) : (
-          <Link to="/login" className="bg-blue-600 px-3 py-1 rounded text-sm hover:bg-blue-500">
-            Login
+        {!isLoginPage && (
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          <Link to="/" className="rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700">
+            Store
           </Link>
+          <Link to="/cart" className="relative rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700">
+            Cart
+            {totalCartItems > 0 && (
+              <span className="ml-1.5 inline-flex min-w-5 justify-center rounded-full bg-violet-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                {totalCartItems}
+              </span>
+            )}
+          </Link>
+
+          {user?.isAdmin && (
+            <Link to="/admin" className="hidden rounded-xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-100 sm:block">
+              Admin
+            </Link>
+          )}
+
+          {user ? (
+            <button
+              onClick={handleLogout}
+              className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link to="/login" className="primary-button !px-4 !py-2 text-sm">
+              Login
+            </Link>
+          )}
+        </div>
         )}
       </div>
     </nav>
@@ -98,9 +112,9 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         <Navbar />
-        <main className="container mx-auto">
+        <main>
           <Routes>
             {/* Unprotected Login Route */}
             <Route path="/login" element={<LoginPage />} />

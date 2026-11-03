@@ -29,34 +29,37 @@ export default function ProductPage() {
     };
   }, [id]);
 
-  if (loading) return <div className="p-8 text-center text-gray-600">Loading product details...</div>;
-  if (!product) return <div className="p-8 text-center text-red-500">Product not found.</div>;
+  if (loading) return <div className="p-16 text-center font-medium text-slate-500">Loading product details...</div>;
+  if (!product) return <div className="p-16 text-center text-red-500">Product not found.</div>;
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
       <button 
         onClick={() => navigate('/')} 
-        className="mb-6 text-sm font-medium text-indigo-600 hover:underline"
+        className="mb-6 rounded-xl px-1 py-2 text-sm font-bold text-violet-600 hover:text-violet-800"
       >
-        &larr; Back to Store
+        &larr; Back to store
       </button>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden grid grid-cols-1 md:grid-cols-2">
-        <img 
-          src={product.imageUrl} 
-          alt={product.name} 
-          className="w-full h-80 object-cover" 
-          onError={(e) => {
-            e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
-          }}
-        />
-        <div className="p-6 flex flex-col justify-between">
+      <div className="surface-card grid overflow-hidden md:grid-cols-2">
+        <div className="min-h-80 bg-slate-100 md:min-h-[34rem]">
+          <img 
+            src={product.imageUrl} 
+            alt={product.name} 
+            className="h-full w-full object-cover" 
+            onError={(e) => {
+              e.target.src = 'https://via.placeholder.com/700x700?text=No+Image';
+            }}
+          />
+        </div>
+        <div className="flex flex-col justify-between p-6 sm:p-10">
           <div>
-            <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
-            <p className="text-gray-600 mb-6 leading-relaxed">{product.description}</p>
-            <div className="mb-6">
-              <span className="text-3xl font-extrabold text-indigo-600">{product.priceEth} ETH</span>
-              <p className={`mt-2 text-sm font-medium ${product.stockQuantity > 0 ? 'text-green-600' : 'text-red-500'}`}>
+            <span className="eyebrow">Featured product</span>
+            <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-slate-900">{product.name}</h1>
+            <p className="my-6 leading-7 text-slate-500">{product.description}</p>
+            <div className="mb-8 rounded-2xl bg-slate-50 p-5">
+              <span className="text-3xl font-black text-violet-600">{product.priceEth} ETH</span>
+              <p className={`mt-2 text-sm font-bold ${product.stockQuantity > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                 {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
               </p>
             </div>
@@ -65,13 +68,13 @@ export default function ProductPage() {
           <button
             disabled={product.stockQuantity <= 0}
             onClick={() => addToCart(product)}
-            className={`w-full py-3 rounded-lg text-white font-semibold shadow transition ${
+            className={`w-full rounded-xl py-3.5 font-bold text-white transition ${
               product.stockQuantity > 0 
-                ? 'bg-blue-600 hover:bg-blue-700' 
-                : 'bg-gray-400 cursor-not-allowed'
+                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-violet-200 hover:-translate-y-0.5' 
+                : 'cursor-not-allowed bg-slate-300'
             }`}
           >
-            {product.stockQuantity > 0 ? 'Add to Cart' : 'Out of Stock'}
+            {product.stockQuantity > 0 ? 'Add to cart' : 'Out of stock'}
           </button>
         </div>
       </div>
