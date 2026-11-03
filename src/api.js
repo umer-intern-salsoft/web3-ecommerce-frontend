@@ -1,4 +1,10 @@
-const API_URL = import.meta.env.VITE_API_URL;
+const configuredApiUrl = import.meta.env.VITE_API_URL;
+const hostname = window.location.hostname;
+const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+const isDevTunnel = hostname.endsWith('.devtunnels.ms');
+const API_URL = isDevTunnel
+  ? '/api'
+  : configuredApiUrl || (isLocalhost ? 'http://localhost:5000/api' : '/api');
 
 export const fetchApi = async (endpoint, options = {}) => {
   const res = await fetch(`${API_URL}${endpoint}`, {
