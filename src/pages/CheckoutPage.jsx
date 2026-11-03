@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
 import { parseEther } from 'viem';
@@ -10,27 +10,26 @@ export default function CheckoutPage() {
   const { address, isConnected } = useAccount();
   const navigate = useNavigate();
 
-  const [isVerifying, setIsVerifying] = useState(false);
+  const [txHash, setTxHash] = useState(null);
+  const [statusText, setStatusText] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const totalEth = getCartTotal();
   const adminWallet = import.meta.env.VITE_ADMIN_WALLET_ADDRESS;
 
-  const { data: hash, isPending: isSendingTx, sendTransaction, error: sendError } = useSendTransaction();
+  const { sendTransactionAsync, isPending: isSendingTx } = useSendTransaction();
 
-  const { isLoading: isWaitingForTx } = useWaitForTransactionReceipt({
-    hash,
-    onSuccess: async (receipt) => {
-      if (receipt.status === 'success') {
-        await verifyOrder(hash);
-      }
-    }
+  // Watch for transaction receipt on Sepolia
+  const { data: receipt, isLoading: isWaitingForTx, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
+    hash: txHash,
   });
 
   const handlePayment = async () => {
     setErrorMessage('');
     setSuccessMessage('');
+    setStatusText('');
 
     if (!isConnected) {
       setErrorMessage('Please connect your crypto wallet first.');
@@ -43,40 +42,59 @@ export default function CheckoutPage() {
     }
 
     try {
-      sendTransaction({
+      setStatusText('Awaiting wallet approval...');
+      const hash = await sendTransactionAsync({
         to: adminWallet,
         value: parseEther(totalEth.toFixed(6).toString())
       });
+
+      setTxHash(hash);
+      setStatusText('Transaction broadcasted! Waiting for Sepolia block confirmation...');
     } catch (err) {
-      setErrorMessage(err.message || 'Failed to initiate transaction.');
+      console.error(err);
+      setErrorMessage(err.message || 'Failed to send transaction.');
+      setStatusText('');
     }
   };
 
-  const verifyOrder = async (txHash) => {
-    setIsVerifying(true);
-    try {
-      const cartPayload = cart.map(item => ({
-        productId: item.product.id,
-        quantity: item.quantity
-      }));
+  // Automatically trigger backend verification once transaction succeeds on-chain
+  useEffect(() => {
+    const verifyOrder = async (hashToVerify) => {
+      setIsVerifying(true);
+      setStatusText('Verifying transaction with server...');
+      try {
+        const cartPayload = cart.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity
+        }));
 
-      await fetchApi('/orders/verify', {
-        method: 'POST',
-        body: JSON.stringify({
-          txHash,
-          cartItems: cartPayload
-        })
-      });
+        await fetchApi('/orders/verify', {
+          method: 'POST',
+          body: JSON.stringify({
+            txHash: hashToVerify,
+            cartItems: cartPayload
+          })
+        });
 
-      clearCart();
-      setSuccessMessage('Payment verified! Your order has been placed.');
-      setTimeout(() => navigate('/'), 3000);
-    } catch (err) {
-      setErrorMessage(err.message || 'Payment sent but backend verification failed.');
-    } finally {
-      setIsVerifying(false);
+        clearCart();
+        setSuccessMessage('Payment verified! Order placed successfully.');
+        setStatusText('Redirecting to home page...');
+
+        // Redirect back to store landing page after 2.5 seconds
+        setTimeout(() => {
+          navigate('/');
+        }, 2500);
+      } catch (err) {
+        setErrorMessage(err.message || 'Payment sent on-chain, but server verification failed.');
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    if (isTxSuccess && receipt && txHash && !isVerifying && !successMessage) {
+      verifyOrder(txHash);
     }
-  };
+  }, [isTxSuccess, receipt, txHash, isVerifying, successMessage, cart, clearCart, navigate]);
 
   if (cart.length === 0 && !successMessage) {
     return (
@@ -121,9 +139,9 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {(errorMessage || sendError) && (
+        {errorMessage && (
           <div className="p-3 bg-red-100 text-red-700 rounded text-sm">
-            {errorMessage || sendError?.message}
+            {errorMessage}
           </div>
         )}
 
@@ -133,11 +151,17 @@ export default function CheckoutPage() {
           </div>
         )}
 
+        {statusText && !errorMessage && !successMessage && (
+          <div className="p-3 bg-blue-50 text-blue-700 rounded text-sm animate-pulse">
+            {statusText}
+          </div>
+        )}
+
         <button
-          disabled={!isConnected || isSendingTx || isWaitingForTx || isVerifying}
+          disabled={!isConnected || isSendingTx || isWaitingForTx || isVerifying || !!successMessage}
           onClick={handlePayment}
           className={`w-full py-3 rounded-lg text-white font-bold transition ${
-            !isConnected || isSendingTx || isWaitingForTx || isVerifying
+            !isConnected || isSendingTx || isWaitingForTx || isVerifying || !!successMessage
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-indigo-600 hover:bg-indigo-700 shadow-md'
           }`}
@@ -145,7 +169,8 @@ export default function CheckoutPage() {
           {isSendingTx && 'Awaiting Wallet Approval...'}
           {isWaitingForTx && 'Confirming on Sepolia Blockchain...'}
           {isVerifying && 'Verifying Payment on Server...'}
-          {!isSendingTx && !isWaitingForTx && !isVerifying && `Pay ${totalEth.toFixed(4)} ETH`}
+          {successMessage && 'Order Placed! Redirecting...'}
+          {!isSendingTx && !isWaitingForTx && !isVerifying && !successMessage && `Pay ${totalEth.toFixed(4)} ETH`}
         </button>
       </div>
     </div>

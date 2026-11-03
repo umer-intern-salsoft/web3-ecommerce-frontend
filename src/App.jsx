@@ -65,11 +65,11 @@ const ProtectedRoute = ({ children, requireAdmin }) => {
   const user = useStore((state) => state.user);
   const authLoading = useStore((state) => state.authLoading);
 
-  // Don't redirect until we've checked the session with backend
   if (authLoading) {
     return <div className="p-8 text-center text-gray-600">Verifying session...</div>;
   }
 
+  // If not logged in, force redirect to /login
   if (!user) return <Navigate to="/login" replace />;
   if (requireAdmin && !user.isAdmin) return <Navigate to="/" replace />;
 
@@ -80,7 +80,7 @@ function App() {
   const setUser = useStore((state) => state.setUser);
   const setAuthLoading = useStore((state) => state.setAuthLoading);
 
-  // Restore session from HTTP-only cookie on app load
+  // Check HTTP-only cookie on application start
   useEffect(() => {
     const restoreSession = async () => {
       try {
@@ -102,17 +102,35 @@ function App() {
         <Navbar />
         <main className="container mx-auto">
           <Routes>
-            <Route path="/" element={<Storefront />} />
-            <Route path="/product/:id" element={<ProductPage />} />
-            <Route path="/cart" element={<CartPage />} />
+            {/* Unprotected Login Route */}
             <Route path="/login" element={<LoginPage />} />
             
+            {/* Protected Store & Shopping Routes */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Storefront />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/product/:id" element={
+              <ProtectedRoute>
+                <ProductPage />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/cart" element={
+              <ProtectedRoute>
+                <CartPage />
+              </ProtectedRoute>
+            } />
+
             <Route path="/checkout" element={
               <ProtectedRoute>
                 <CheckoutPage />
               </ProtectedRoute>
             } />
 
+            {/* Admin-only Route */}
             <Route path="/admin" element={
               <ProtectedRoute requireAdmin={true}>
                 <AdminDashboard />
