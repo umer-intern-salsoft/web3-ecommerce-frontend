@@ -6,6 +6,7 @@ export default defineConfig({
   build: {
     target: ['es2020', 'safari15'],
   },
+  base: '/web3-ecommerce-frontend/',
   plugins: [
     react(),
     tailwindcss(),

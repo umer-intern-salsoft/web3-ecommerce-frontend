@@ -111,7 +111,7 @@ function App() {
   }, [setUser, setAuthLoading]);
 
   return (
-    <Router>
+    <Router basename="/web3-ecommerce-frontend">
       <div className="min-h-screen">
         <Navbar />
         <main>
