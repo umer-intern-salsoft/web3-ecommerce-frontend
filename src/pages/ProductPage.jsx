@@ -8,6 +8,8 @@ export default function ProductPage() {
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [ethUsd, setEthUsd] = useState(null);
+  const [priceError, setPriceError] = useState('');
   const addToCart = useStore((state) => state.addToCart);
 
   useEffect(() => {
@@ -28,6 +30,12 @@ export default function ProductPage() {
       isMounted = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    fetchApi('/pricing/eth-usd')
+      .then((data) => setEthUsd(data.ethUsd))
+      .catch(() => setPriceError('Live ETH conversion is temporarily unavailable.'));
+  }, []);
 
   if (loading) return <div className="p-16 text-center font-medium text-slate-500">Loading product details...</div>;
   if (!product) return <div className="p-16 text-center text-red-500">Product not found.</div>;
@@ -58,7 +66,21 @@ export default function ProductPage() {
             <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] text-slate-900">{product.name}</h1>
             <p className="my-6 leading-7 text-slate-500">{product.description}</p>
             <div className="mb-8 rounded-2xl bg-slate-50 p-5">
-              <span className="text-3xl font-black text-violet-600">{product.priceEth} ETH</span>
+              <span className="text-3xl font-black text-violet-600">
+                ${Number(product.priceUsd).toFixed(2)}
+              </span>
+              {ethUsd ? (
+                <p className="mt-2 text-sm font-semibold text-slate-600">
+                  ≈ {(product.priceUsd / ethUsd).toFixed(6)} ETH
+                  <span className="ml-2 font-normal text-slate-400">
+                    at ${ethUsd.toLocaleString()} / ETH
+                  </span>
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-slate-400">
+                  {priceError || 'Loading live ETH equivalent...'}
+                </p>
+              )}
               <p className={`mt-2 text-sm font-bold ${product.stockQuantity > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                 {product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}
               </p>

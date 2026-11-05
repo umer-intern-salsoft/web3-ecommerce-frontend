@@ -11,7 +11,9 @@ const loadUserCart = (user) => {
 
   try {
     const cart = JSON.parse(localStorage.getItem(key) || '[]');
-    return Array.isArray(cart) ? cart : [];
+    return Array.isArray(cart)
+      ? cart.filter((item) => Number.isFinite(Number(item?.product?.priceUsd)))
+      : [];
   } catch {
     return [];
   }
@@ -89,8 +91,8 @@ export const useStore = create((set, get) => ({
     set({ cart: [] });
   },
 
-  getCartTotal: () => {
+  getCartTotalUsd: () => {
     const { cart } = get();
-    return cart.reduce((total, item) => total + (item.product.priceEth * item.quantity), 0);
+    return cart.reduce((total, item) => total + (item.product.priceUsd * item.quantity), 0);
   }
 }));

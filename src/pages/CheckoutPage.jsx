@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount, useSendTransaction, useWaitForTransactionReceipt } from 'wagmi';
 import { AppKitButton } from '@reown/appkit/react';
@@ -7,7 +7,7 @@ import { useStore } from '../store/useStore';
 import { fetchApi } from '../api';
 
 export default function CheckoutPage() {
-  const { cart, getCartTotal, clearCart } = useStore();
+  const { cart, getCartTotalUsd, clearCart } = useStore();
   const { address, isConnected } = useAccount();
   const navigate = useNavigate();
 
@@ -16,8 +16,11 @@ export default function CheckoutPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [checkoutQuote, setCheckoutQuote] = useState(null);
+  const [submittedQuoteToken, setSubmittedQuoteToken] = useState('');
+  const [isLoadingQuote, setIsLoadingQuote] = useState(true);
 
-  const totalEth = getCartTotal();
+  const cartTotalUsd = getCartTotalUsd();
   const adminWallet = import.meta.env.VITE_ADMIN_WALLET_ADDRESS;
 
   const { sendTransactionAsync, isPending: isSendingTx } = useSendTransaction();
@@ -26,6 +29,37 @@ export default function CheckoutPage() {
   const { data: receipt, isLoading: isWaitingForTx, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
     hash: txHash,
   });
+
+  const refreshQuote = useCallback(async () => {
+    if (cart.length === 0) return null;
+
+    try {
+      const quote = await fetchApi('/pricing/checkout-quote', {
+        method: 'POST',
+        body: JSON.stringify({
+          cartItems: cart.map((item) => ({
+            productId: item.product.id,
+            quantity: item.quantity
+          }))
+        })
+      });
+      setCheckoutQuote(quote);
+      return quote;
+    } catch (err) {
+      setErrorMessage(err.message || 'Unable to load live ETH pricing.');
+      throw err;
+    } finally {
+      setIsLoadingQuote(false);
+    }
+  }, [cart]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      refreshQuote().catch(() => {});
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [refreshQuote]);
 
   const handlePayment = async () => {
     setErrorMessage('');
@@ -43,10 +77,16 @@ export default function CheckoutPage() {
     }
 
     try {
+      setStatusText('Refreshing live ETH price...');
+      setIsLoadingQuote(true);
+      const activeQuote = await refreshQuote();
+      if (!activeQuote) throw new Error('Unable to create a checkout quote.');
+
+      setSubmittedQuoteToken(activeQuote.quoteToken);
       setStatusText('Awaiting wallet approval...');
       const hash = await sendTransactionAsync({
         to: adminWallet,
-        value: parseEther(totalEth.toFixed(6).toString())
+        value: parseEther(activeQuote.totalEth)
       });
 
       setTxHash(hash);
@@ -64,16 +104,11 @@ export default function CheckoutPage() {
       setIsVerifying(true);
       setStatusText('Verifying transaction with server...');
       try {
-        const cartPayload = cart.map(item => ({
-          productId: item.product.id,
-          quantity: item.quantity
-        }));
-
         await fetchApi('/orders/verify', {
           method: 'POST',
           body: JSON.stringify({
             txHash: hashToVerify,
-            cartItems: cartPayload
+            quoteToken: submittedQuoteToken
           })
         });
 
@@ -92,10 +127,10 @@ export default function CheckoutPage() {
       }
     };
 
-    if (isTxSuccess && receipt && txHash && !isVerifying && !successMessage) {
+    if (isTxSuccess && receipt && txHash && submittedQuoteToken && !isVerifying && !successMessage) {
       verifyOrder(txHash);
     }
-  }, [isTxSuccess, receipt, txHash, isVerifying, successMessage, cart, clearCart, navigate]);
+  }, [isTxSuccess, receipt, txHash, submittedQuoteToken, isVerifying, successMessage, clearCart, navigate]);
 
   if (cart.length === 0 && !successMessage) {
     return (
@@ -123,13 +158,22 @@ export default function CheckoutPage() {
         {cart.map(item => (
           <div key={item.product.id} className="flex justify-between gap-4 text-sm text-slate-600">
             <span>{item.product.name} <span className="text-slate-400">× {item.quantity}</span></span>
-            <span className="font-semibold text-slate-900">{(item.product.priceEth * item.quantity).toFixed(4)} ETH</span>
+            <span className="font-semibold text-slate-900">${(item.product.priceUsd * item.quantity).toFixed(2)}</span>
           </div>
         ))}
         <div className="flex justify-between border-t border-slate-100 pt-4 text-lg font-bold">
-          <span>Total:</span>
-          <span className="text-violet-600">{totalEth.toFixed(4)} ETH</span>
+          <span>USD total:</span>
+          <span className="text-violet-600">${Number(checkoutQuote?.totalUsd ?? cartTotalUsd).toFixed(2)}</span>
         </div>
+        <div className="flex justify-between text-sm text-slate-500">
+          <span>Live ETH equivalent:</span>
+          <span>{checkoutQuote ? `${checkoutQuote.totalEth} ETH` : 'Loading...'}</span>
+        </div>
+        {checkoutQuote && (
+          <p className="text-right text-xs text-slate-400">
+            1 ETH = ${Number(checkoutQuote.ethUsd).toLocaleString()}
+          </p>
+        )}
       </div>
 
       <div className="surface-card space-y-6 p-5 sm:p-6">
@@ -171,10 +215,10 @@ export default function CheckoutPage() {
         )}
 
         <button
-          disabled={!isConnected || isSendingTx || isWaitingForTx || isVerifying || !!successMessage}
+          disabled={!isConnected || !checkoutQuote || isLoadingQuote || isSendingTx || isWaitingForTx || isVerifying || !!successMessage}
           onClick={handlePayment}
           className={`w-full rounded-xl py-3.5 font-bold text-white transition ${
-            !isConnected || isSendingTx || isWaitingForTx || isVerifying || !!successMessage
+            !isConnected || !checkoutQuote || isLoadingQuote || isSendingTx || isWaitingForTx || isVerifying || !!successMessage
               ? 'cursor-not-allowed bg-slate-300'
               : 'bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-violet-200 hover:-translate-y-0.5 hover:shadow-xl'
           }`}
@@ -183,7 +227,10 @@ export default function CheckoutPage() {
           {isWaitingForTx && 'Confirming on Sepolia Blockchain...'}
           {isVerifying && 'Verifying Payment on Server...'}
           {successMessage && 'Order Placed! Redirecting...'}
-          {!isSendingTx && !isWaitingForTx && !isVerifying && !successMessage && `Pay ${totalEth.toFixed(4)} ETH`}
+          {isLoadingQuote && !isSendingTx && 'Refreshing live price...'}
+          {!isLoadingQuote && !isSendingTx && !isWaitingForTx && !isVerifying && !successMessage && (
+            checkoutQuote ? `Pay ${checkoutQuote.totalEth} ETH` : 'Live price unavailable'
+          )}
         </button>
       </div>
     </div>

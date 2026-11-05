@@ -6,14 +6,14 @@ export default function CartPage() {
     cart,
     removeFromCart,
     clearCart,
-    getCartTotal,
+    getCartTotalUsd,
     increaseQuantity,
     decreaseQuantity,
     user
   } = useStore();
   const navigate = useNavigate();
 
-  const totalEth = getCartTotal();
+  const totalUsd = getCartTotalUsd();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
@@ -46,7 +46,7 @@ export default function CartPage() {
                 />
                 <div className="min-w-0">
                   <h3 className="truncate text-base font-bold text-slate-900 sm:text-lg">{item.product.name}</h3>
-                  <p className="mt-1 text-sm text-slate-500">{item.product.priceEth} ETH each</p>
+                  <p className="mt-1 text-sm text-slate-500">${Number(item.product.priceUsd).toFixed(2)} each</p>
                   <button 
                     onClick={() => removeFromCart(item.product.id)}
                     className="mt-3 text-xs font-bold text-red-500 transition hover:text-red-700"
@@ -76,7 +76,7 @@ export default function CartPage() {
                     </button>
                   </div>
                   <div className="font-extrabold text-violet-600">
-                    {(item.product.priceEth * item.quantity).toFixed(4)} ETH
+                    ${(item.product.priceUsd * item.quantity).toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -92,7 +92,7 @@ export default function CartPage() {
               </div>
               <div className="flex items-end justify-between">
                 <span className="font-semibold text-slate-700">Total</span>
-                <span className="text-2xl font-black text-violet-600">{totalEth.toFixed(4)} ETH</span>
+                <span className="text-2xl font-black text-violet-600">${totalUsd.toFixed(2)}</span>
               </div>
             </div>
             <button

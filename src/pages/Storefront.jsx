@@ -81,7 +81,9 @@ export default function Storefront() {
                 <div className="p-5">
                   <h2 className="text-lg font-bold text-slate-900">{product.name}</h2>
                   <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">{product.description}</p>
-                  <span className="mt-4 block text-xl font-black text-violet-600">{product.priceEth} ETH</span>
+                  <span className="mt-4 block text-xl font-black text-violet-600">
+                    ${Number(product.priceUsd).toFixed(2)}
+                  </span>
                 </div>
               </div>
 

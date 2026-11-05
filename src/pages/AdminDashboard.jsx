@@ -4,7 +4,7 @@ import { fetchApi } from '../api';
 export default function AdminDashboard() {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
-    name: '', description: '', imageUrl: '', priceEth: '', stockQuantity: ''
+    name: '', description: '', imageUrl: '', priceUsd: '', stockQuantity: ''
   });
 
   // Dedicated function for manual refreshes after creating/updating
@@ -48,24 +48,29 @@ export default function AdminDashboard() {
         method: 'POST',
         body: JSON.stringify({
           ...formData,
-          priceEth: parseFloat(formData.priceEth),
+          priceUsd: parseFloat(formData.priceUsd),
           stockQuantity: parseInt(formData.stockQuantity, 10)
         })
       });
-      setFormData({ name: '', description: '', imageUrl: '', priceEth: '', stockQuantity: '' });
+      setFormData({ name: '', description: '', imageUrl: '', priceUsd: '', stockQuantity: '' });
       loadProducts(); // Call the manual refresh
     } catch (err) {
       alert(err.message);
     }
   };
 
-  const handleUpdateStock = async (id, newStock) => {
+  const handleUpdateProduct = async (event, id) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
     try {
-      await fetchApi(`/products/${id}/stock`, {
+      await fetchApi(`/products/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ stockQuantity: parseInt(newStock, 10) })
+        body: JSON.stringify({
+          priceUsd: parseFloat(form.get('priceUsd')),
+          stockQuantity: parseInt(form.get('stockQuantity'), 10)
+        })
       });
-      loadProducts(); // Call the manual refresh
+      loadProducts();
     } catch (err) {
       alert(err.message);
     }
@@ -90,8 +95,8 @@ export default function AdminDashboard() {
               value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
             
             <div className="grid grid-cols-2 gap-4">
-              <input type="number" step="0.0001" placeholder="Price (ETH)" required className="w-full p-2 border rounded"
-                value={formData.priceEth} onChange={e => setFormData({...formData, priceEth: e.target.value})} />
+              <input type="number" min="0.01" step="0.01" placeholder="Price (USD)" required className="w-full p-2 border rounded"
+                value={formData.priceUsd} onChange={e => setFormData({...formData, priceUsd: e.target.value})} />
               <input type="number" placeholder="Stock Qty" required className="w-full p-2 border rounded"
                 value={formData.stockQuantity} onChange={e => setFormData({...formData, stockQuantity: e.target.value})} />
             </div>
@@ -107,20 +112,37 @@ export default function AdminDashboard() {
           <h2 className="text-xl font-bold mb-4">Manage Inventory</h2>
           <div className="space-y-4">
             {products.map(product => (
-              <div key={product.id} className="bg-white p-4 rounded-lg shadow-sm flex items-center justify-between">
+              <div key={product.id} className="bg-white p-4 rounded-lg shadow-sm">
                 <div>
                   <h3 className="font-bold">{product.name}</h3>
-                  <p className="text-sm text-gray-500">{product.priceEth} ETH</p>
+                  <p className="text-sm text-gray-500">${Number(product.priceUsd).toFixed(2)}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="text-sm">Stock:</label>
+                <form onSubmit={(event) => handleUpdateProduct(event, product.id)} className="mt-3 flex flex-wrap items-end gap-2">
+                  <label className="text-sm">
+                    <span className="mb-1 block text-xs text-gray-500">USD price</span>
+                    <input 
+                      name="priceUsd"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      className="w-28 p-2 border rounded" 
+                      defaultValue={product.priceUsd}
+                    />
+                  </label>
+                  <label className="text-sm">
+                    <span className="mb-1 block text-xs text-gray-500">Stock</span>
                   <input 
+                    name="stockQuantity"
                     type="number" 
-                    className="w-20 p-1 border rounded" 
+                    min="0"
+                    className="w-20 p-2 border rounded" 
                     defaultValue={product.stockQuantity}
-                    onBlur={(e) => handleUpdateStock(product.id, e.target.value)}
                   />
-                </div>
+                  </label>
+                  <button type="submit" className="rounded bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                    Save
+                  </button>
+                </form>
               </div>
             ))}
           </div>
