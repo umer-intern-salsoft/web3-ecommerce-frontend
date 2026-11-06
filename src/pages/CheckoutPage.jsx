@@ -86,7 +86,8 @@ export default function CheckoutPage() {
       setStatusText('Awaiting wallet approval...');
       const hash = await sendTransactionAsync({
         to: adminWallet,
-        value: parseEther(activeQuote.totalEth)
+        value: parseEther(activeQuote.totalEth),
+        gas: 21_000n
       });
 
       setTxHash(hash);
